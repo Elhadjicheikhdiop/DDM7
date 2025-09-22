@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDM Sénégal - Suivi & Évaluation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+    </div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-chart-line"></i> DDM Sénégal</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" data-page="dashboard" class="menu-item active"><i class="fas fa-tachometer-alt"></i> Tableau de Bord</a></li>
+            <li><a href="#" data-page="projets" class="menu-item"><i class="fas fa-project-diagram"></i> Projets</a></li>
+            <li><a href="#" data-page="activites" class="menu-item"><i class="fas fa-tasks"></i> Activités</a></li>
+            <li><a href="#" data-page="beneficiaires" class="menu-item"><i class="fas fa-users"></i> Bénéficiaires</a></li>
+            <li><a href="#" data-page="indicateurs" class="menu-item"><i class="fas fa-chart-bar"></i> Indicateurs</a></li>
+            <li><a href="#" data-page="cartographie" class="menu-item"><i class="fas fa-map-marked-alt"></i> Cartographie</a></li>
+            <li><a href="#" data-page="rapports" class="menu-item"><i class="fas fa-file-alt"></i> Rapports</a></li>
+            <li><a href="#" data-page="administration" class="menu-item"><i class="fas fa-cog"></i> Administration</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-header">
+            <h1 id="page-title">Tableau de Bord</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="sync-btn"><i class="fas fa-sync-alt"></i> Synchroniser</button>
+                <button class="btn btn-secondary" id="export-btn"><i class="fas fa-download"></i> Exporter</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page active">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="fas fa-users"></i></div>
+                    <div class="kpi-content">
+                        <h3 id="total-beneficiaires">0</h3>
+                        <p>Bénéficiaires Atteints</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="fas fa-project-diagram"></i></div>
+                    <div class="kpi-content">
+                        <h3 id="projets-actifs">0</h3>
+                        <p>Projets Actifs</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="fas fa-tasks"></i></div>
+                    <div class="kpi-content">
+                        <h3 id="activites-realisees">0</h3>
+                        <p>Activités Réalisées</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="fas fa-euro-sign"></i></div>
+                    <div class="kpi-content">
+                        <h3 id="budget-total">0€</h3>
+                        <p>Budget Total</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Activités par Programme</h3>
+                    <canvas id="activites-chart" style="height: 400px;"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Bénéficiaires par Catégorie</h3>
+                    <canvas id="beneficiaires-chart" style="height: 400px;"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Budget Consommé vs Prévu</h3>
+                    <canvas id="budget-chart" style="height: 400px;"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Évolution Mensuelle</h3>
+                    <canvas id="evolution-chart" style="height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projets Page -->
+        <div id="projets-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-primary" id="add-projet-btn"><i class="fas fa-plus"></i> Nouveau Projet</button>
+                <div class="search-filter">
+                    <input type="text" id="projets-search" placeholder="Rechercher un projet...">
+                    <select id="projets-filter">
+                        <option value="">Tous les projets</option>
+                        <option value="actif">Actifs</option>
+                        <option value="terminé">Terminés</option>
+                        <option value="en_pause">En pause</option>
+                    </select>
+                </div>
+            </div>
+            <div class="data-table-container">
+                <table id="projets-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom du Projet</th>
+                            <th>Date Début</th>
+                            <th>Date Fin</th>
+                            <th>Responsable</th>
+                            <th>Budget</th>
+                            <th>Statut</th>
+                            <th>Progression</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Activités Page -->
+        <div id="activites-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-primary" id="add-activite-btn"><i class="fas fa-plus"></i> Nouvelle Activité</button>
+                <div class="search-filter">
+                    <input type="text" id="activites-search" placeholder="Rechercher une activité...">
+                    <select id="activites-filter">
+                        <option value="">Tous types</option>
+                        <option value="formation">Formation</option>
+                        <option value="atelier">Atelier</option>
+                        <option value="sensibilisation">Sensibilisation</option>
+                        <option value="accompagnement">Accompagnement</option>
+                    </select>
+                </div>
+            </div>
+            <div class="data-table-container">
+                <table id="activites-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom de l'Activité</th>
+                            <th>Projet</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Lieu</th>
+                            <th>Bénéficiaires</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bénéficiaires Page -->
+        <div id="beneficiaires-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-primary" id="add-beneficiaire-btn"><i class="fas fa-plus"></i> Nouveau Bénéficiaire</button>
+                <div class="search-filter">
+                    <input type="text" id="beneficiaires-search" placeholder="Rechercher un bénéficiaire...">
+                    <select id="beneficiaires-filter">
+                        <option value="">Toutes catégories</option>
+                        <option value="femmes">Femmes</option>
+                        <option value="jeunes">Jeunes</option>
+                        <option value="migrants">Migrants</option>
+                        <option value="handicapes">Personnes handicapées</option>
+                    </select>
+                </div>
+            </div>
+            <div class="data-table-container">
+                <table id="beneficiaires-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code/Nom</th>
+                            <th>Sexe</th>
+                            <th>Âge</th>
+                            <th>Catégorie</th>
+                            <th>Projet</th>
+                            <th>Type de Soutien</th>
+                            <th>Date d'Inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Indicateurs Page -->
+        <div id="indicateurs-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-primary" id="add-indicateur-btn"><i class="fas fa-plus"></i> Nouvel Indicateur</button>
+            </div>
+            <div class="indicateurs-grid">
+                <div class="indicateur-card">
+                    <h3>Nombre de personnes formées</h3>
+                    <div class="indicateur-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%"></div>
+                        </div>
+                        <span>750 / 1000</span>
+                    </div>
+                </div>
+                <div class="indicateur-card">
+                    <h3>Taux d'insertion professionnelle</h3>
+                    <div class="indicateur-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                        <span>60%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartographie Page -->
+        <div id="cartographie-page" class="page">
+            <div class="page-header">
+                <div class="map-filters">
+                    <select id="map-filter-projet">
+                        <option value="">Tous les projets</option>
+                    </select>
+                    <select id="map-filter-type">
+                        <option value="">Tous types d'activités</option>
+                    </select>
+                </div>
+            </div>
+            <div id="map" style="height: 600px; width: 100%;"></div>
+        </div>
+
+        <!-- Rapports Page -->
+        <div id="rapports-page" class="page">
+            <div class="reports-grid">
+                <div class="report-card">
+                    <h3><i class="fas fa-file-pdf"></i> Rapport Mensuel</h3>
+                    <p>Génère un rapport complet des activités du mois</p>
+                    <button class="btn btn-primary" onclick="generateReport('monthly')">Générer PDF</button>
+                </div>
+                <div class="report-card">
+                    <h3><i class="fas fa-file-excel"></i> Export Excel</h3>
+                    <p>Exporte toutes les données en format Excel</p>
+                    <button class="btn btn-primary" onclick="exportToExcel()">Télécharger Excel</button>
+                </div>
+                <div class="report-card">
+                    <h3><i class="fas fa-chart-line"></i> Rapport d'Impact</h3>
+                    <p>Analyse détaillée de l'impact des programmes</p>
+                    <button class="btn btn-primary" onclick="generateReport('impact')">Générer PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Administration Page -->
+        <div id="administration-page" class="page">
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3><i class="fas fa-database"></i> Configuration Base de Données</h3>
+                    <div class="form-group">
+                        <label>URL Supabase</label>
+                        <input type="text" id="supabase-url" placeholder="https://votre-projet.supabase.co">
+                    </div>
+                    <div class="form-group">
+                        <label>Clé API Supabase</label>
+                        <input type="password" id="supabase-key" placeholder="Votre clé API">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSupabaseConfig()">Enregistrer Configuration</button>
+                </div>
+                <div class="admin-card">
+                    <h3><i class="fas fa-sync-alt"></i> Synchronisation</h3>
+                    <p>Dernière synchronisation: <span id="last-sync">Jamais</span></p>
+                    <button class="btn btn-secondary" onclick="forceSync()">Forcer la Synchronisation</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Modal Projet -->
+    <div id="projet-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="projet-modal-title">Nouveau Projet</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="projet-form">
+                <div class="form-group">
+                    <label>Nom du Projet *</label>
+                    <input type="text" name="nom" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date Début *</label>
+                        <input type="date" name="date_debut" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date Fin *</label>
+                        <input type="date" name="date_fin" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Responsable *</label>
+                    <input type="text" name="responsable" required>
+                </div>
+                <div class="form-group">
+                    <label>Partenaires</label>
+                    <textarea name="partenaires" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Budget Prévu (€) *</label>
+                        <input type="number" name="budget_prevu" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Budget Réalisé (€)</label>
+                        <input type="number" name="budget_realise" min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Objectifs</label>
+                    <textarea name="objectifs" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select name="statut">
+                        <option value="actif">Actif</option>
+                        <option value="terminé">Terminé</option>
+                        <option value="en_pause">En pause</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('projet-modal')">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/projets.js"></script>
+    <script src="js/activites.js"></script>
+    <script src="js/beneficiaires.js"></script>
+    <script src="js/cartographie.js"></script>
+    <script src="js/rapports.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
