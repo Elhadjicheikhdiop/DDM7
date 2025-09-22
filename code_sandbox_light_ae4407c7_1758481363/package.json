@@ -1,0 +1,33 @@
+{
+  "name": "ddm-senegal-suivi-evaluation",
+  "version": "1.0.0",
+  "description": "Application de suivi et évaluation des programmes DDM Sénégal",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=3000",
+    "build": "echo 'No build step required for static site'",
+    "start": "echo 'Static site - use a web server to serve files'"
+  },
+  "keywords": [
+    "ddm",
+    "senegal",
+    "suivi",
+    "evaluation",
+    "monitoring",
+    "supabase",
+    "vercel"
+  ],
+  "author": "DDM Sénégal",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ddm-senegal/suivi-evaluation.git"
+  },
+  "homepage": "https://ddm-senegal-suivi-evaluation.vercel.app",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
